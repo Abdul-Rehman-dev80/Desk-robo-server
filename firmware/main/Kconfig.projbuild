@@ -1,0 +1,43 @@
+menu "Desk Robo"
+
+    config ROBO_WIFI_SSID
+        string "WiFi SSID"
+        default ""
+
+    config ROBO_WIFI_PASSWORD
+        string "WiFi password"
+        default ""
+
+    config ROBO_HOSTNAME
+        string "mDNS hostname (reach the robot at <name>.local)"
+        default "deskrobo"
+
+    config ROBO_PAN_MIN_DEG
+        int "Pan lower limit (degrees)"
+        range 0 180
+        default 10
+
+    config ROBO_PAN_MAX_DEG
+        int "Pan upper limit (degrees)"
+        range 0 180
+        default 170
+
+    config ROBO_TILT_MIN_DEG
+        int "Tilt lower limit (degrees)"
+        range 0 180
+        default 45
+
+    config ROBO_TILT_MAX_DEG
+        int "Tilt upper limit (degrees)"
+        range 0 180
+        default 135
+
+    config ROBO_SERVO_SPEED_DEG_S
+        int "Maximum servo speed (degrees per second)"
+        range 10 600
+        default 180
+        help
+            Servo moves are ramped to this speed. Slower ramps draw less
+            current and avoid brownout resets on a weak 5 V supply.
+
+endmenu
