@@ -8,7 +8,21 @@ An ESP32-S3-CAM desk robot that talks (English, Urdu/Hindi), recognises and foll
 
 ## Firmware
 
-Needs [ESP-IDF v5.4](https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32s3/get-started/index.html). The easiest install on Windows is the ESP-IDF Windows installer; on macOS/Linux use `install.sh`. The VS Code ESP-IDF extension also works.
+Built with [ESP-IDF v5.4](https://docs.espressif.com/projects/esp-idf/en/v5.4/esp32s3/get-started/index.html), Espressif's own framework (the Arduino core for ESP32 is built on top of it).
+
+### Easiest: VS Code (no command line)
+
+1. Install [VS Code](https://code.visualstudio.com/) and the **ESP-IDF** extension by Espressif.
+2. In the extension's setup wizard choose **Express**, ESP-IDF version **v5.4.x**, and let it download everything (a few GB).
+3. **File > Open Folder** and open the `firmware` folder of this repo.
+4. In the bottom status bar:
+   - set the target to **esp32s3** (choose "ESP32-S3 chip (via builtin USB-JTAG)" or "via ESP-PROG", either works for building),
+   - pick your COM port (plug the board into the **TTL** USB-C port),
+   - click the **gear icon** (SDK Configuration Editor), search "Desk Robo", and fill in your WiFi SSID and password, then Save,
+   - click the **flame icon** (Build, Flash and Monitor).
+5. The log appears in the terminal. Press `Ctrl+]` to close it.
+
+### Command line
 
 ```sh
 cd firmware
