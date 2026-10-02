@@ -1,0 +1,36 @@
+name: xiaozhi
+
+on:
+  push:
+    branches: [main]
+    paths: ["xiaozhi/**", ".github/workflows/xiaozhi.yml"]
+  pull_request:
+    paths: ["xiaozhi/**", ".github/workflows/xiaozhi.yml"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build digilog-s3cam-oled
+    runs-on: ubuntu-latest
+    # Same ESP-IDF version the original Digilog firmware was built with
+    container:
+      image: espressif/idf:v6.1
+    defaults:
+      run:
+        working-directory: xiaozhi
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: bash
+        run: |
+          source $IDF_PATH/export.sh
+          python scripts/build.py digilog-s3cam-oled
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          # One file to flash at address 0x0 (see xiaozhi/main/boards/digilog-s3cam-oled/README.md)
+          name: digilog-s3cam-oled-merged-binary
+          path: xiaozhi/build/merged-binary.bin
+          if-no-files-found: error
