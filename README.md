@@ -57,3 +57,7 @@ python tools/fake_robot.py ws://localhost:8000/ws/robot
 ```
 
 The robot connects to `/ws/robot` with `Authorization: Bearer <DEVICE_TOKEN>`. The protocol is described in `server/app/protocol.py`. The Gemini key is only ever stored on the server.
+
+## Xiaozhi-based firmware (`xiaozhi/`)
+
+`xiaozhi/` is a copy of the open-source [78/xiaozhi-esp32](https://github.com/78/xiaozhi-esp32) project at v2.5.0 (MIT licence, see `xiaozhi/LICENSE`) plus our board, `xiaozhi/main/boards/digilog-s3cam-oled/`. The only upstream files we changed are the board entries in `xiaozhi/main/Kconfig.projbuild` and `xiaozhi/main/CMakeLists.txt`, so upstream updates can be merged later. It gives the robot voice chat, wake word, camera photos and OLED, and exposes the two servos to the AI.
