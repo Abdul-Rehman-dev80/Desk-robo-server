@@ -8,6 +8,9 @@ on:
     paths: ["xiaozhi/**", ".github/workflows/xiaozhi.yml"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build digilog-s3cam-oled
@@ -34,3 +37,27 @@ jobs:
           name: digilog-s3cam-oled-merged-binary
           path: xiaozhi/build/merged-binary.bin
           if-no-files-found: error
+
+  # Every build of main gets its own entry on the repo's Releases page,
+  # with merged-binary.bin ready to download (no GitHub Actions page needed).
+  release:
+    name: Publish to Releases
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: digilog-s3cam-oled-merged-binary
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: firmware-${{ github.run_number }}
+          name: Firmware build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          body: |
+            Digilog desk robot firmware, built from ${{ github.sha }}.
+            Flash `merged-binary.bin` at address `0x0` (this erases saved WiFi settings).
+          files: merged-binary.bin

@@ -22,7 +22,7 @@ Build: `python scripts/build.py digilog-s3cam-oled` (from the `xiaozhi/` folder,
 
 ## Getting the firmware without installing anything
 
-Every build on GitHub (Actions tab > latest `xiaozhi` run) attaches `merged-binary.bin`.
+Every build of `main` is published on the repo's **Releases** page (right side of the repo's front page) with `merged-binary.bin` attached. Builds of pull requests attach it to the Actions run instead.
 Flash it at address `0x0`, for example with Espressif's web flasher or:
 
 ```sh
