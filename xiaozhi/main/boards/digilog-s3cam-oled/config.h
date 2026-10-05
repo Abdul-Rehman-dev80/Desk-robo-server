@@ -22,10 +22,10 @@
 #define BUILTIN_LED_GPIO        GPIO_NUM_48
 #define BOOT_BUTTON_GPIO        GPIO_NUM_0
 
-// OLED (I2C). The camera's SCCB bus owns I2C port 0, so the OLED uses port 1.
+// OLED (I2C). esp32-camera's SCCB driver takes I2C port 1 on the S3, so the OLED uses port 0.
 #define DISPLAY_SDA_PIN GPIO_NUM_41
 #define DISPLAY_SCL_PIN GPIO_NUM_42
-#define DISPLAY_I2C_PORT 1
+#define DISPLAY_I2C_PORT 0
 #define DISPLAY_WIDTH   128
 #define DISPLAY_HEIGHT  64
 #define DISPLAY_MIRROR_X true

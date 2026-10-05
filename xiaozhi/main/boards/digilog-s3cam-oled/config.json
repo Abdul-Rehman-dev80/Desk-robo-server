@@ -5,7 +5,8 @@
         {
             "name": "digilog-s3cam-oled",
             "sdkconfig_append": [
-                "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/v2/16m_digilog.csv\""
+                "CONFIG_PARTITION_TABLE_CUSTOM_FILENAME=\"partitions/v2/16m_digilog.csv\"",
+                "CONFIG_LANGUAGE_EN_US=y"
             ],
             "build_options": {
                 "camera_hmirror": false,
