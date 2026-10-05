@@ -7,6 +7,11 @@ on:
   pull_request:
     paths: ["xiaozhi/**", ".github/workflows/xiaozhi.yml"]
   workflow_dispatch:
+    inputs:
+      backtrace:
+        description: "Crash backtrace from the serial log (e.g. 0x4037CA0A:0x3FCA04A0 ...); decoded against this build"
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -34,3 +39,21 @@ jobs:
           name: digilog-s3cam-oled-merged-binary
           path: xiaozhi/build/merged-binary.bin
           if-no-files-found: error
+
+      - name: Upload ELF (for decoding crash backtraces)
+        uses: actions/upload-artifact@v4
+        with:
+          name: digilog-s3cam-oled-elf
+          path: xiaozhi/build/xiaozhi.elf
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Decode backtrace
+        if: ${{ inputs.backtrace != '' }}
+        shell: bash
+        env:
+          BACKTRACE: ${{ inputs.backtrace }}
+        run: |
+          source $IDF_PATH/export.sh
+          pcs=$(echo "$BACKTRACE" | tr ' ' '\n' | cut -d: -f1 | grep -E '^0x[0-9a-fA-F]+$' | tr '\n' ' ')
+          xtensa-esp32s3-elf-addr2line -pfiaC -e build/xiaozhi.elf $pcs

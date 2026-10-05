@@ -1,0 +1,11 @@
+# ESP-IDF Partition Table for digilog-s3cam-oled (16 MB flash)
+# Same as 16m.csv, but both app slots start at 0x80000 or later. Flash
+# 0x70000-0x7ffff is left unused: one sector on the author's board (0x78000)
+# fails to program, so nothing may live in that range.
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,    0x4000,
+otadata,  data, ota,     0xd000,    0x2000,
+phy_init, data, phy,     0xf000,    0x1000,
+ota_0,    app,  ota_0,   0x80000,   0x380000,
+ota_1,    app,  ota_1,   0x400000,  0x380000,
+assets,   data, spiffs,  0x800000,  8M

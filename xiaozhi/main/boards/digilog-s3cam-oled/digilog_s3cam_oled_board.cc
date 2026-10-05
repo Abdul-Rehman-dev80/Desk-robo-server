@@ -10,6 +10,8 @@
 #include "dual_servo.h"
 
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <driver/i2c_master.h>
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_vendor.h>
@@ -43,8 +45,29 @@ private:
     }
 
     void InitializeSsd1306Display() {
+        // The module can need a moment after power-up, so probe for it for up to ~1.2 s
+        // and accept either common address (0x3C, or 0x3D when the module is strapped).
+        vTaskDelay(pdMS_TO_TICKS(200));
+        uint8_t oled_addr = 0;
+        for (int attempt = 0; attempt < 10 && oled_addr == 0; attempt++) {
+            if (i2c_master_probe(display_i2c_bus_, 0x3C, 50) == ESP_OK) {
+                oled_addr = 0x3C;
+            } else if (i2c_master_probe(display_i2c_bus_, 0x3D, 50) == ESP_OK) {
+                oled_addr = 0x3D;
+            } else {
+                vTaskDelay(pdMS_TO_TICKS(100));
+            }
+        }
+        if (oled_addr == 0) {
+            ESP_LOGE(TAG, "OLED not found on I2C (SDA %d, SCL %d), running without a display",
+                     DISPLAY_SDA_PIN, DISPLAY_SCL_PIN);
+            display_ = new NoDisplay();
+            return;
+        }
+        ESP_LOGI(TAG, "OLED found at 0x%02X", oled_addr);
+
         esp_lcd_panel_io_i2c_config_t io_config = {
-            .dev_addr = 0x3C,
+            .dev_addr = oled_addr,
             .scl_speed_hz = 400 * 1000,
             .control_phase_bytes = 1,
             .dc_bit_offset = 6,
@@ -71,7 +94,7 @@ private:
         ESP_ERROR_CHECK(esp_lcd_new_panel_ssd1306(panel_io_, &panel_config, &panel_));
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_));
         if (esp_lcd_panel_init(panel_) != ESP_OK) {
-            ESP_LOGE(TAG, "OLED not found at 0x3C, running without a display");
+            ESP_LOGE(TAG, "OLED did not accept init commands, running without a display");
             display_ = new NoDisplay();
             return;
         }
