@@ -15,7 +15,11 @@ on:
 
 jobs:
   build:
-    name: Build digilog-s3cam-oled
+    name: Build ${{ matrix.variant }}
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [digilog-s3cam-oled, digilog-s3cam-oled-sh1106, digilog-s3cam-oled-micright]
     runs-on: ubuntu-latest
     # Same ESP-IDF version the original Digilog firmware was built with
     container:
@@ -30,20 +34,20 @@ jobs:
         shell: bash
         run: |
           source $IDF_PATH/export.sh
-          python scripts/build.py digilog-s3cam-oled
+          python scripts/build.py digilog-s3cam-oled --name ${{ matrix.variant }}
 
       - name: Upload firmware
         uses: actions/upload-artifact@v4
         with:
           # One file to flash at address 0x0 (see xiaozhi/main/boards/digilog-s3cam-oled/README.md)
-          name: digilog-s3cam-oled-merged-binary
+          name: ${{ matrix.variant }}-merged-binary
           path: xiaozhi/build/merged-binary.bin
           if-no-files-found: error
 
       - name: Upload ELF (for decoding crash backtraces)
         uses: actions/upload-artifact@v4
         with:
-          name: digilog-s3cam-oled-elf
+          name: ${{ matrix.variant }}-elf
           path: xiaozhi/build/xiaozhi.elf
           retention-days: 7
           if-no-files-found: warn

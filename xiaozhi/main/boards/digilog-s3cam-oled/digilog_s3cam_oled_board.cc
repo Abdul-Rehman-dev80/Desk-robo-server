@@ -1,6 +1,7 @@
 #include "wifi_board.h"
 #include "codecs/no_audio_codec.h"
 #include "display/oled_display.h"
+#include "display/robo_eyes/robo_eyes_display.h"
 #include "application.h"
 #include "button.h"
 #include "config.h"
@@ -16,6 +17,10 @@
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_vendor.h>
 
+#ifdef CONFIG_DIGILOG_OLED_SH1106
+#include <esp_lcd_panel_sh1106.h>
+#endif
+
 #define TAG "DigilogS3CamOledBoard"
 
 class DigilogS3CamOledBoard : public WifiBoard {
@@ -24,6 +29,7 @@ private:
     esp_lcd_panel_io_handle_t panel_io_ = nullptr;
     esp_lcd_panel_handle_t panel_ = nullptr;
     Display* display_ = nullptr;
+    RoboEyesDisplay* eyes_display_ = nullptr;
     Button boot_button_;
     Esp32Camera* camera_ = nullptr;
     DualServo* servos_ = nullptr;
@@ -91,7 +97,11 @@ private:
         };
         panel_config.vendor_config = &ssd1306_config;
 
+#ifdef CONFIG_DIGILOG_OLED_SH1106
+        ESP_ERROR_CHECK(esp_lcd_new_panel_sh1106(panel_io_, &panel_config, &panel_));
+#else
         ESP_ERROR_CHECK(esp_lcd_new_panel_ssd1306(panel_io_, &panel_config, &panel_));
+#endif
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_));
         if (esp_lcd_panel_init(panel_) != ESP_OK) {
             ESP_LOGE(TAG, "OLED did not accept init commands, running without a display");
@@ -101,7 +111,9 @@ private:
         ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_, false));
         ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_, true));
 
-        display_ = new OledDisplay(panel_io_, panel_, DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
+        eyes_display_ = new RoboEyesDisplay(panel_io_, panel_, DISPLAY_WIDTH, DISPLAY_HEIGHT,
+                                            DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
+        display_ = eyes_display_;
     }
 
     void InitializeCamera() {
@@ -144,6 +156,19 @@ private:
         });
     }
 
+    // Glance the eyes the way the robot is about to turn, then move. Screen left/right is the
+    // viewer's left/right, so the robot turning left (smaller yaw) looks to the viewer's right.
+    void MoveServo(DualServo::Axis axis, float target_deg) {
+        float delta = target_deg - servos_->GetTarget(axis);
+        if (eyes_display_ != nullptr && delta != 0) {
+            RoboEyes::Position pos = axis == DualServo::kYaw
+                ? (delta < 0 ? RoboEyes::kE : RoboEyes::kW)
+                : (delta > 0 ? RoboEyes::kN : RoboEyes::kS);
+            eyes_display_->LookAt(pos, 1500);
+        }
+        servos_->SetTarget(axis, target_deg);
+    }
+
     // Tool names and meanings match the previous Digilog firmware, so existing
     // voice prompts keep working. 90 is centered; for yaw, smaller turns left.
     void InitializeServoTools() {
@@ -156,28 +181,28 @@ private:
             "values outside the safe travel limits are clamped.",
             PropertyList({Property("angle", kPropertyTypeInteger, 90, 0, 180)}),
             [this](const PropertyList& properties) -> ToolResult {
-                servos_->SetTarget(DualServo::kYaw, properties["angle"].value<int>());
+                MoveServo(DualServo::kYaw, properties["angle"].value<int>());
                 return true;
             });
         mcp.AddTool("self.base.turn_left",
             "Turn the desk robot camera/base left (decrease yaw angle). Call this when the user asks to look left or turn left.",
             PropertyList({Property("degrees", kPropertyTypeInteger, 20, 1, 180)}),
             [this](const PropertyList& properties) -> ToolResult {
-                servos_->MoveBy(DualServo::kYaw, -properties["degrees"].value<int>());
+                MoveServo(DualServo::kYaw, servos_->GetTarget(DualServo::kYaw) - properties["degrees"].value<int>());
                 return true;
             });
         mcp.AddTool("self.base.turn_right",
             "Turn the desk robot camera/base right (increase yaw angle). Call this when the user asks to look right or turn right.",
             PropertyList({Property("degrees", kPropertyTypeInteger, 20, 1, 180)}),
             [this](const PropertyList& properties) -> ToolResult {
-                servos_->MoveBy(DualServo::kYaw, properties["degrees"].value<int>());
+                MoveServo(DualServo::kYaw, servos_->GetTarget(DualServo::kYaw) + properties["degrees"].value<int>());
                 return true;
             });
         mcp.AddTool("self.base.center",
             "Center the desk robot camera/base (yaw) to forward-facing 90 degrees. Use when the user asks to look forward, center, or reset pan. Does not change head pitch/tilt.",
             PropertyList(),
             [this](const PropertyList&) -> ToolResult {
-                servos_->SetTarget(DualServo::kYaw, SERVO_CENTER_DEG);
+                MoveServo(DualServo::kYaw, SERVO_CENTER_DEG);
                 return true;
             });
 
@@ -186,28 +211,28 @@ private:
             "smaller angles look down, larger look up. Angle range 0-180; values outside the safe travel limits are clamped.",
             PropertyList({Property("angle", kPropertyTypeInteger, 90, 0, 180)}),
             [this](const PropertyList& properties) -> ToolResult {
-                servos_->SetTarget(DualServo::kPitch, properties["angle"].value<int>());
+                MoveServo(DualServo::kPitch, properties["angle"].value<int>());
                 return true;
             });
         mcp.AddTool("self.head.look_up",
             "Tilt the desk robot head up (increase pitch angle). Call when the user asks to look up.",
             PropertyList({Property("degrees", kPropertyTypeInteger, 15, 1, 90)}),
             [this](const PropertyList& properties) -> ToolResult {
-                servos_->MoveBy(DualServo::kPitch, properties["degrees"].value<int>());
+                MoveServo(DualServo::kPitch, servos_->GetTarget(DualServo::kPitch) + properties["degrees"].value<int>());
                 return true;
             });
         mcp.AddTool("self.head.look_down",
             "Tilt the desk robot head down (decrease pitch angle). Call when the user asks to look down.",
             PropertyList({Property("degrees", kPropertyTypeInteger, 15, 1, 90)}),
             [this](const PropertyList& properties) -> ToolResult {
-                servos_->MoveBy(DualServo::kPitch, -properties["degrees"].value<int>());
+                MoveServo(DualServo::kPitch, servos_->GetTarget(DualServo::kPitch) - properties["degrees"].value<int>());
                 return true;
             });
         mcp.AddTool("self.head.center",
             "Center the desk robot head pitch/tilt to level 90 degrees. Use when the user asks to level the head, look straight, or reset tilt.",
             PropertyList(),
             [this](const PropertyList&) -> ToolResult {
-                servos_->SetTarget(DualServo::kPitch, SERVO_CENTER_DEG);
+                MoveServo(DualServo::kPitch, SERVO_CENTER_DEG);
                 return true;
             });
     }
@@ -227,9 +252,15 @@ public:
     }
 
     virtual AudioCodec* GetAudioCodec() override {
+#ifdef CONFIG_DIGILOG_MIC_RIGHT
+        static NoAudioCodecSimplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
+            AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT, I2S_STD_SLOT_LEFT,
+            AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN, I2S_STD_SLOT_RIGHT);
+#else
         static NoAudioCodecSimplex audio_codec(AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
             AUDIO_I2S_SPK_GPIO_BCLK, AUDIO_I2S_SPK_GPIO_LRCK, AUDIO_I2S_SPK_GPIO_DOUT,
             AUDIO_I2S_MIC_GPIO_SCK, AUDIO_I2S_MIC_GPIO_WS, AUDIO_I2S_MIC_GPIO_DIN);
+#endif
         return &audio_codec;
     }
 

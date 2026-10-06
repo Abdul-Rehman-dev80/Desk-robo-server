@@ -39,3 +39,9 @@ dd if=merged-binary.bin of=hi.bin bs=4096 skip=121     # 0x79000 - end
 python -m esptool --chip esp32s3 -b 460800 write_flash 0x0 lo.bin
 python -m esptool --chip esp32s3 -b 460800 write_flash 0x79000 hi.bin
 ```
+
+## Eyes
+
+The OLED shows animated RoboEyes-style eyes (`main/display/robo_eyes/`). They blink and glance around when idle, look at you while listening, move while speaking and change mood with the emotion Xiaozhi sends (happy, sad, angry, loving, surprised, thinking, confused, sleepy, cool, embarrassed, winking). Chat text and notifications appear in a one-line strip at the bottom only while there is something to read. When a servo tool turns the robot, the eyes glance that way first. If the OLED does not answer on I2C at startup, the robot runs without a display instead of hanging.
+
+If the eyes are upside down, flip `DISPLAY_MIRROR_X` / `DISPLAY_MIRROR_Y` in `config.h`.
