@@ -17,6 +17,10 @@
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_panel_vendor.h>
 
+#ifdef CONFIG_DIGILOG_OLED_SH1106
+#include <esp_lcd_panel_sh1106.h>
+#endif
+
 #define TAG "DigilogS3CamOledBoard"
 
 class DigilogS3CamOledBoard : public WifiBoard {
@@ -93,7 +97,11 @@ private:
         };
         panel_config.vendor_config = &ssd1306_config;
 
+#ifdef CONFIG_DIGILOG_OLED_SH1106
+        ESP_ERROR_CHECK(esp_lcd_new_panel_sh1106(panel_io_, &panel_config, &panel_));
+#else
         ESP_ERROR_CHECK(esp_lcd_new_panel_ssd1306(panel_io_, &panel_config, &panel_));
+#endif
         ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_));
         if (esp_lcd_panel_init(panel_) != ESP_OK) {
             ESP_LOGE(TAG, "OLED did not accept init commands, running without a display");

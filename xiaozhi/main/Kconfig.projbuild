@@ -722,6 +722,14 @@ choice WK_ESP32S3_DEV_DISPLAY_TYPE
 
 endchoice
 
+config DIGILOG_OLED_SH1106
+    bool "Digilog desk robot: OLED uses the SH1106 chip (1.3 inch module)"
+    depends on BOARD_TYPE_DIGILOG_S3CAM_OLED
+    default n
+    help
+        Select for the common 1.3 inch 128x64 OLED modules (SH1106).
+        Leave off for the 0.96 inch SSD1306 modules.
+
 choice DISPLAY_OLED_TYPE
     depends on BOARD_TYPE_BREAD_COMPACT_WIFI || BOARD_TYPE_BREAD_COMPACT_ML307 || BOARD_TYPE_BREAD_COMPACT_NT26 || BOARD_TYPE_BREAD_COMPACT_ESP32 || BOARD_TYPE_HU_087 || (BOARD_TYPE_WK_ESP32S3_DEV && WK_ESP32S3_DEV_DISPLAY_OLED)
     prompt "OLED Type"
