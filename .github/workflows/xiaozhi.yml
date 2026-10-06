@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [digilog-s3cam-oled, digilog-s3cam-oled-sh1106]
+        variant: [digilog-s3cam-oled, digilog-s3cam-oled-sh1106, digilog-s3cam-oled-micright]
     runs-on: ubuntu-latest
     # Same ESP-IDF version the original Digilog firmware was built with
     container:
